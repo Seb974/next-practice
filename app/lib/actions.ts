@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+import { RedirectType, redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { signOut } from '@/auth';
 import { AuthError } from 'next-auth';
@@ -67,7 +67,7 @@ export async function createPassenger(prevState: State, formData: FormData) {
     }
 
     revalidatePath('/dashboard/passengers');
-    redirect('/dashboard/passengers');
+    redirect('/dashboard/passengers', RedirectType.replace);
 }
 
 export async function updatePassenger(id: string, prevState: State, formData: FormData) {
