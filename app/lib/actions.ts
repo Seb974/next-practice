@@ -5,105 +5,110 @@ import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
+import { signOut } from '@/auth';
 import { AuthError } from 'next-auth';
  
 const FormSchema = z.object({
-  id: z.string(),
-  customerId: z.string({
-    invalid_type_error: 'Please select a customer.',
+  id: z.number(),
+  lastname: z.string({
+    invalid_type_error: 'Entrez votre nom de famille s\'il vous plaît.',
   }),
-  amount: z.coerce
-        .number()
-        .gt(0, { message: 'Please enter an amount greater than $0.' }),
-  status: z.enum(['pending', 'paid'],{
-    invalid_type_error: 'Please select an invoice status.',
+  name: z.string({
+    invalid_type_error: 'Entrez votre prénom s\'il vous plaît.',
   }),
-  date: z.string(),
+  email: z.string({
+    invalid_type_error: 'Entrez votre adresse email s\'il vous plaît.',
+  }),
+  phone: z.string({
+    invalid_type_error: 'Entrez votre numéro de téléphone s\'il vous plaît.',
+  }),
+  date: z.date(),
 });
 
 export type State = {
     errors?: {
-      customerId?: string[];
-      amount?: string[];
-      status?: string[];
+      lastname?: string[];
+      name?: string[];
+      email?: string[];
+      phone?: string[];
     };
     message?: string | null;
   }
  
-const CreateInvoice = FormSchema.omit({ id: true, date: true });
-const UpdateInvoice = FormSchema.omit({ id: true, date: true });
+const CreatePassenger = FormSchema.omit({ id: true, date: true });
+const UpdatePassenger = FormSchema.omit({ id: true, date: true });
 
-export async function createInvoice(prevState: State, formData: FormData) {
+export async function createPassenger(prevState: State, formData: FormData) {
 
-    const validatedFields = CreateInvoice.safeParse({
-        customerId: formData.get('customerId'),
-        amount: formData.get('amount'),
-        status: formData.get('status'),
+    const validatedFields = CreatePassenger.safeParse({
+        lastname: formData.get('lastname'),
+        name: formData.get('name'),
+        email: formData.get('email'),
+        phone: formData.get('phone')
     });
 
     if (!validatedFields.success) {
         return {
           errors: validatedFields.error.flatten().fieldErrors,
-          message: 'Missing Fields. Failed to Create Invoice.',
+          message: 'Des informations sont manquantes. La création du passager n\'a pas pu aboutir.',
         };
     }
 
-    const { customerId, amount, status } = validatedFields.data;
-    const amountInCents = amount * 100;
+    const { lastname, name, email, phone } = validatedFields.data;
     const date = new Date().toISOString().split('T')[0];
 
     try {
         await sql`
-            INSERT INTO invoices (customer_id, amount, status, date)
-            VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
+            INSERT INTO passengers (lastname, name, email, phone, date)
+            VALUES (${lastname}, ${name}, ${email}, ${phone}, ${date})
         `;
     } catch (error) {
-        return { message: 'Database Error: Failed to Create Invoice.'};
+        return { message: 'Erreur: La création du passager n\'a pas pu aboutir.'};
     }
 
-    revalidatePath('/dashboard/invoices');
-    redirect('/dashboard/invoices');
+    revalidatePath('/dashboard/passengers');
+    redirect('/dashboard/passengers');
 }
 
-export async function updateInvoice(id: string, prevState: State, formData: FormData) {
+export async function updatePassenger(id: string, prevState: State, formData: FormData) {
 
-  const validatedFields = UpdateInvoice.safeParse({
-    customerId: formData.get('customerId'),
-    amount: formData.get('amount'),
-    status: formData.get('status'),
+  const validatedFields = UpdatePassenger.safeParse({
+        lastname: formData.get('lastname'),
+        name: formData.get('name'),
+        email: formData.get('email'),
+        phone: formData.get('phone')
   });
 
   if (!validatedFields.success) {
       return {
         errors: validatedFields.error.flatten().fieldErrors,
-        message: 'Missing Fields. Failed to Update Invoice.',
+        message: 'Des informations sont manquantes. La modification du passager n\'a pas pu aboutir.',
       };
   }
    
-  const { customerId, amount, status } = validatedFields.data;
-  const amountInCents = amount * 100;
+  const { lastname, name, email, phone } = validatedFields.data;
    
   try {
       await sql`
-      UPDATE invoices
-      SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+      UPDATE passengers
+      SET lastname = ${lastname}, name = ${name}, email = ${email}, phone = ${phone}
       WHERE id = ${id}
       `;
   } catch (error) {
-      return { message: 'Database Error: Failed to Update Invoice.'};
+      return { message: 'Erreur : la mise à jour du passager n\'a pas pu aboutir.'};
   }
   
-  revalidatePath('/dashboard/invoices');
-  redirect('/dashboard/invoices');
+  revalidatePath('/dashboard/passengers');
+  redirect('/dashboard/passengers');
 }
 
 export async function deleteInvoice(id: string) {
     try {
-        await sql`DELETE FROM invoices WHERE id = ${id}`;
-        revalidatePath('/dashboard/invoices');
-        return { message: 'Deleted Invoice.' };
+        await sql`DELETE FROM passengers WHERE id = ${id}`;
+        revalidatePath('/dashboard/passengers');
+        return { message: 'Passager supprimé.' };
     } catch (error) {
-        return { message: 'Database Error: Failed to Delete Invoice.'};
+        return { message: 'Erreur : la suppression du passager n\'a pas pu aboutir.'};
     }
 }
 
@@ -117,11 +122,15 @@ export async function authenticate(
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
-          return 'Invalid credentials.';
+          return 'L\'adresse email et le mot de passe ne correspondent pas.';
         default:
-          return 'Something went wrong.';
+          return 'Une erreur est survenue.';
       }
     }
     throw error;
   }
 }
+
+export async function logout() {
+  return await signOut();
+};

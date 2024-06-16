@@ -1,22 +1,19 @@
 import Form from '@/app/ui/invoices/edit-form';
 import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
-import { fetchInvoiceById, fetchCustomers } from '@/app/lib/data';
+import { fetchPassengerById } from '@/app/lib/data';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Edit invoice',
+    title: 'Modifier un passager',
 };
  
 export default async function Page({ params }: { params: { id: string } }) {
 
     const id = params.id;
-    const [invoice, customers] = await Promise.all([
-        fetchInvoiceById(id),
-        fetchCustomers(),
-    ]);
+    const passenger = await fetchPassengerById(id);
 
-    if (!invoice) {
+    if (!passenger) {
         notFound();
       }
 
@@ -24,15 +21,15 @@ export default async function Page({ params }: { params: { id: string } }) {
         <main>
         <Breadcrumbs
             breadcrumbs={[
-            { label: 'Invoices', href: '/dashboard/invoices' },
+            { label: 'Passagers', href: '/dashboard/passengers' },
             {
-                label: 'Edit Invoice',
-                href: `/dashboard/invoices/${id}/edit`,
+                label: 'Modifier un passager',
+                href: `/dashboard/passengers/${id}/edit`,
                 active: true,
             },
             ]}
         />
-        <Form invoice={invoice} customers={customers} />
+        <Form passenger={passenger} />
         </main>
     );
 }

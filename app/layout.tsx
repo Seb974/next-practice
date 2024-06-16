@@ -1,6 +1,7 @@
 import '@/app/ui/global.css';
 import { inter, lusitana } from '@/app/ui/fonts';
 import { Metadata } from 'next';
+import {NextUIProvider} from "@nextui-org/react";
  
 export const metadata: Metadata = {
   title: {
@@ -18,7 +19,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${lusitana.className} antialiased`}>{children}</body>
+      <body className={`${lusitana.className} antialiased`}>
+        <NextUIProvider>
+          {children}
+        </NextUIProvider>
+      </body>
     </html>
   );
 }

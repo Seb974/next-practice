@@ -2,8 +2,8 @@ import { sql } from '@vercel/postgres';
 import {
   CustomerField,
   CustomersTableType,
-  InvoiceForm,
-  InvoicesTable,
+  PassengerForm,
+  PassengersTable,
   LatestInvoiceRaw,
   User,
   Revenue,
@@ -92,7 +92,7 @@ export async function fetchCardData() {
 }
 
 const ITEMS_PER_PAGE = 6;
-export async function fetchFilteredInvoices(
+export async function fetchFilteredPassengers(
   query: string,
   currentPage: number,
 ) {
@@ -100,76 +100,71 @@ export async function fetchFilteredInvoices(
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    const invoices = await sql<InvoicesTable>`
+    const passengers = await sql<PassengersTable>`
       SELECT
-        invoices.id,
-        invoices.amount,
-        invoices.date,
-        invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
+        passengers.id,
+        passengers.date,
+        passengers.phone,
+        passengers.name,
+        passengers.email,
+        passengers.lastname
+      FROM passengers
       WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
-        invoices.amount::text ILIKE ${`%${query}%`} OR
-        invoices.date::text ILIKE ${`%${query}%`} OR
-        invoices.status ILIKE ${`%${query}%`}
-      ORDER BY invoices.date DESC
+        passengers.name ILIKE ${`%${query}%`} OR
+        passengers.email ILIKE ${`%${query}%`} OR
+        passengers.phone::text ILIKE ${`%${query}%`} OR
+        passengers.date::text ILIKE ${`%${query}%`} OR
+        passengers.lastname ILIKE ${`%${query}%`}
+      ORDER BY passengers.date DESC
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
 
-    return invoices.rows;
+    return passengers.rows;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoices.');
+    throw new Error('Failed to fetch passengers.');
   }
 }
 
-export async function fetchInvoicesPages(query: string) {
+export async function fetchPassengersPages(query: string) {
   noStore();
   try {
     const count = await sql`SELECT COUNT(*)
-    FROM invoices
-    JOIN customers ON invoices.customer_id = customers.id
+    FROM passengers
     WHERE
-      customers.name ILIKE ${`%${query}%`} OR
-      customers.email ILIKE ${`%${query}%`} OR
-      invoices.amount::text ILIKE ${`%${query}%`} OR
-      invoices.date::text ILIKE ${`%${query}%`} OR
-      invoices.status ILIKE ${`%${query}%`}
+      passengers.name ILIKE ${`%${query}%`} OR
+      passengers.email ILIKE ${`%${query}%`} OR
+      passengers.lastname ILIKE ${`%${query}%`} OR
+      passengers.date::text ILIKE ${`%${query}%`} OR
+      passengers.phone::text ILIKE ${`%${query}%`}
   `;
 
     const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
     return totalPages;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch total number of invoices.');
+    throw new Error('Failed to fetch total number of passengers.');
   }
 }
 
-export async function fetchInvoiceById(id: string) {
+export async function fetchPassengerById(id: string) {
   noStore();
   try {
-    const data = await sql<InvoiceForm>`
+    const data = await sql<PassengerForm>`
       SELECT
-        invoices.id,
-        invoices.customer_id,
-        invoices.amount,
-        invoices.status
-      FROM invoices
-      WHERE invoices.id = ${id};
+        passengers.id,
+        passengers.name,
+        passengers.lastname,
+        passengers.email,
+        passengers.phone,
+        passengers.date
+      FROM passengers
+      WHERE passengers.id = ${id};
     `;
 
-    const invoice = data.rows.map((invoice) => ({
-      ...invoice,
-      // Convert amount from cents to dollars
-      amount: invoice.amount / 100,
-    }));
+    const passenger = data.rows.map((passenger) => ({...passenger}));
 
-    return invoice[0];
+    return passenger[0];
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch invoice.');
